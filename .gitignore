@@ -1,0 +1,7 @@
+*.exe
+*.sln
+*.db
+*.obj
+*.ibj
+Debug
+.vs
