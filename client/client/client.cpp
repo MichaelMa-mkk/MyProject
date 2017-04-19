@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 		boost::asio::connect(socket, endpoint_iterator);
 		boost::system::error_code error;
 	
-		std::string my_name = "Zheng Lv";
+		std::string my_name = "Ma Ke";
 		boost::asio::write(socket, boost::asio::buffer(my_name), error);
 	
 		std::array<char, 256> input_buffer;
