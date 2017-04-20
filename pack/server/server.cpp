@@ -17,20 +17,22 @@ int main()
 
 		tcp::socket socket(io_service);
 		acc.accept(socket);
-
-		std::array<char, 256> input_buffer;
-		std::size_t input_size = socket.read_some(
+		while (1) {
+			std::array<char, 256> input_buffer;
+			std::size_t input_size = socket.read_some(
 				boost::asio::buffer(input_buffer),
 				ignored);
-		std::string visitor(input_buffer.data(),
+			std::string client_message(input_buffer.data(),
 				input_buffer.data() + input_size);
 
-		cout << "Visited from " +
-			socket.remote_endpoint().address().to_string() +
-			" by visitor " << visitor << endl;
+			cout << socket.remote_endpoint().address().to_string() + ": "
+				<< client_message << endl;
 
-		std::string message = "Hello, you are " + visitor + "\n";
-		boost::asio::write(socket, boost::asio::buffer(message), ignored);
+			std::string my_message;
+			cout << "> ";
+			getline(cin, my_message);
+			boost::asio::write(socket, boost::asio::buffer(my_message), ignored);
+		}
 
 		socket.shutdown(tcp::socket::shutdown_both, ignored);
 		socket.close();
