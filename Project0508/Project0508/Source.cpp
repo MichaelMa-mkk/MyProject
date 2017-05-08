@@ -6,6 +6,7 @@
 #include<iostream>
 #include<algorithm>
 #include<sstream>
+#include<cmath>
 using namespace std;
 struct node {
 	node() {}
@@ -63,10 +64,10 @@ int main() {
 	}
 	sort(num_l.begin(), num_l.end());
 	int l = num_l.size();
-	for (int i = 1; i <= 10; i++) {
+	for (int i = 1; i <= min(10, l); i++) {
 		auto pos = map_num[num_l[l - i]];
 		sort(pos.begin(), pos.end());
-		for (auto x =pos.end() - 1; x != pos.begin(); x--)
+		for (auto x = pos.end() - 1; x != pos.begin(); x--)
 			cout << x->sub << " " << num_l[l - i] << endl;
 		cout << pos.begin()->sub << " " << num_l[l - i] << endl;
 	}
