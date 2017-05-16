@@ -118,6 +118,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\360云盘\信息学\VS Projects\ConsoleApplication1\ConsoleApplication1\client.cpp" />
     <ClCompile Include="..\server\Fix.cpp" />
+    <ClCompile Include="..\server\OrderBook.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

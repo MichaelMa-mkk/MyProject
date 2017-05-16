@@ -34,13 +34,14 @@ namespace Fix4 {
 	{
 	}
 
-	string Fix::str() const
-	{// get the fix string
+	string Fix::str()// get the fix string
+		const
+	{
 		return content;
 	}
 
-	char Fix::getTag(int tag_first)
-	{// get tag pair
+	char Fix::getTag(int tag_first) // get tag pair
+	{
 		auto it = tag.find(tag_first);
 		if (it != tag.end()) {
 			return tag[tag_first];
@@ -48,13 +49,14 @@ namespace Fix4 {
 		else return none;
 	}
 
-	double Fix::getPrice() const
-	{// get fix price tag (if has)
+	double Fix::getPrice()// get fix price tag (if has)
+		const
+	{
 		return order_price;
 	}
 
-	bool Fix::addTag(int tag_first, char tag_second)
-	{// add a tag to fix
+	bool Fix::addTag(int tag_first, char tag_second)// add a tag to fix
+	{
 		auto it = tag.find(tag_first);
 		if (it != tag.end()) return false;
 		stringstream ss;
@@ -68,8 +70,8 @@ namespace Fix4 {
 		return true;
 	}
 
-	bool Fix::addTag(int tag_first, string tag_second)
-	{// add a tag to fix
+	bool Fix::addTag(int tag_first, string tag_second)// add a tag to fix
+	{
 		auto it = tag.find(tag_first);
 		if (it != tag.end()) return false;
 		stringstream ss;
@@ -83,8 +85,8 @@ namespace Fix4 {
 		return true;
 	}
 
-	bool Fix::addTag(int tag_first, double tag_second)
-	{// add a tag to fix
+	bool Fix::addTag(int tag_first, double tag_second)// add a tag to fix
+	{
 		auto it = tag.find(tag_first);
 		if (it != tag.end()) return false;
 		stringstream ss;

@@ -7,8 +7,9 @@ struct Order
 {
 	double price;
 	char side;
+	int status;
 	Order() {};
-	Order(double price_, char side_) :price(price_), side(side_) {}
+	Order(double price, char side, int status = 0) :price(price), side(side), status(status) {}
 	bool operator < (const Order & x) const {
 		return price < x.price;
 	}

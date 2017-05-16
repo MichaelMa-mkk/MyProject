@@ -12,8 +12,8 @@ OrderBook::~OrderBook()
 {
 }
 
-bool OrderBook::addNewOrder(Order now)
-{// add a new order to order_list
+bool OrderBook::addNewOrder(Order now)// add a new order to order_list
+{
 	if (now.side == '1') {
 		auto it = upper_bound(buy_order.begin(), buy_order.end(), now);
 		buy_order.insert(it, now);
@@ -26,7 +26,7 @@ bool OrderBook::addNewOrder(Order now)
 }
 
 ostream & operator << (ostream& os, const Order & order) {
-	return os << order.price << " " << order.side;
+	return os << "price: " << order.price << endl << "side: " << order.side << endl << "status: " << order.status << endl;
 }
 
 ostream & operator<< (ostream & os, const OrderBook & book)

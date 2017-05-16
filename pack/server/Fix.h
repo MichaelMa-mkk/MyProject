@@ -8,7 +8,9 @@ namespace Fix4 {
 	const int Price = 44;// tag Price
 	const int OrdID = 11;// tag ClOrdID
 	const int Side = 54;// tag Side
-	const int Type = 35;// tag type
+	const int Type = 35;// tag MsgType
+	const int Status = 39;// tag OrdStatus
+	const int ExecType = 150;// tag ExecType
 
 	class Fix
 	{

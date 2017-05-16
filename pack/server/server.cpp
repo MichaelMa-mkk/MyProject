@@ -1,20 +1,46 @@
 #include <array>
+#include <boost/asio.hpp>
+
 #include <iostream>
 #include <string>
+
 #include "Fix.h"
 #include "OrderBook.h"
-#include <boost/asio.hpp>
 
 using namespace std;
 using boost::asio::ip::tcp;
 using namespace Fix4;
+
+const char report = '8'; // represent Execution Report
+const char new_status = '0';// represent New in tag OrdStatus
+
+OrderBook book;
+
+string sendMessage(char type, char status)// create a Fix message 
+{
+	switch (type)
+	{
+	case report:
+	{
+		Fix send;
+		send.addTag(Type, report);
+		//add type
+		send.addTag(Status, status);
+		send.addTag(ExecType, status);
+		//add status
+		//add time
+		return send.str();
+	}
+	default:
+		break;
+	}
+}
 
 int main()
 {
 	boost::asio::io_service io_service;
 	tcp::acceptor acc(io_service, tcp::endpoint(tcp::v6(), 9876));
 	// open server on LAN
-	OrderBook book;
 	while (1) {
 		boost::system::error_code ignored;
 		tcp::socket socket(io_service);
@@ -28,18 +54,15 @@ int main()
 			switch (now.getTag(Type))
 			{
 			case 'D':
-				book.addNewOrder(Order(now.getPrice(),now.getTag(Side)));
+				book.addNewOrder(Order(now.getPrice(), now.getTag(Side)));
+				boost::asio::write(socket, boost::asio::buffer(sendMessage(report, new_status)), ignored);// send message to client
 				break;
 			default:
 				break;
 			}
 			cout << socket.remote_endpoint().address().to_string() + ": " << client_message << endl;
+			if (client_message == "") break;
 			cout << book;
-
-			string my_message;
-			cout << "> ";
-			getline(cin, my_message);
-			boost::asio::write(socket, boost::asio::buffer(my_message), ignored);
 		}
 
 		socket.shutdown(tcp::socket::shutdown_both, ignored);
