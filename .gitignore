@@ -3,5 +3,6 @@
 *.obj
 *.ibj
 Debug
-.vs
+*.vs
 Release
+*.opendb
