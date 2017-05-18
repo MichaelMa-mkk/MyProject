@@ -5,58 +5,32 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <thread>
+#include <ctime>
 
 #include "Fix.h"
 #include "OrderBook.h"
+#include "transfer.hpp"
 
 using boost::asio::ip::tcp;
 using namespace std;
 using namespace Fix4;
 
 const char add_new = 'D';// represent Order-Single
-const char new_status = '0';// represent New in tag OrdStatus
+const char cancel = 'F';// represent Order Cancel Request
 
 OrderBook book;
 
-void Error(const string & s) {
-	throw runtime_error(s);
-}
-
-string String(int x) {// transfer a int to a string
-	stringstream ss;
-	ss << x;
-	string ans;
-	ss >> ans;
-	return ans;
-}
+// get connected with server
+boost::asio::io_service io_service;
+tcp::resolver resolver(io_service);
+tcp::resolver::query query("192.168.0.106", "9876");
+tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+boost::system::error_code error;
+string client_id;
 
 void menu() {// print operating menu
-	cout << "0: quit\n1: add a order\n2: show all the orders in client\n";
-}
-
-int checkInt(const string & my_message, int low, int high) { // check if input is avaliable
-	stringstream ss;
-	ss << my_message;
-	int n;
-	ss >> n;
-	string temp;// save redundant words
-	ss >> temp;
-	if (my_message[0] < '0' || my_message[0] > '9') Error("Illegal integer format. Try again.");
-	if (temp.size()) Error("Illegal integer format. Try again.");
-	if (n < low || n > high) Error("N must be " + String(low) + " to " + String(high) + ".");
-	return n;
-}
-
-double Double(const string & s) {// transfer a string to a double
-	stringstream ss;
-	ss << s;
-	double ans;
-	ss >> ans;
-	string temp;// save redundant words
-	ss >> temp;
-	if (s[0] < '0' || s[0] > '9') Error("Illegal integer format. Try again.");
-	if (temp.size()) Error("Illegal integer format. Try again.");
-	return ans;
+	cout << "0: quit\n1: add an order\n2: show all the orders in client\n3: cancel an order\n";
 }
 
 string sendMessage(char type)// create a Fix message 
@@ -66,66 +40,132 @@ string sendMessage(char type)// create a Fix message
 	case add_new:
 	{
 		Fix send;
+		//add type
 		send.addTag(Type, add_new);
-		// get type
+		//get stock
 		//get id
+		const time_t t = time(NULL);
+		send.addTag(OrdID, String(t) + client_id);
+		//get side
 		cout << "please enter the side\n1 for buy; 2 for sell" << endl;
 		string input;
 		cout << "> ";
 		getline(cin, input);
 		int side = checkInt(input, 1, 2);
 		send.addTag(Side, char(side + '0'));
-		//get side
+		//get price
 		cout << "please enter the price" << endl;
 		cout << "> ";
 		getline(cin, input);
 		double price = Double(input);
 		send.addTag(Price, price);
-		//get price
-		//get time
-		book.addNewOrder(Order(price, char(side + '0')));
+		//get quantity
+		cout << "please enter the quantity" << endl;
+		cout << "> ";
+		getline(cin, input);
+		int quantity = checkInt(input, 1, 2000);
+		send.addTag(Qty, quantity);
+		return send.str();
+	}
+	case cancel:
+	{
+		Fix send;
+		// add type
+		send.addTag(Type, cancel);
+		// get id
+		cout << "please enter the order id you want to cancel" << endl;
+		cout << "> ";
+		string input;
+		getline(cin, input);
+		send.addTag(cancelID, input);
 		return send.str();
 	}
 	default:
+		return string();
 		break;
+	}
+}
+
+void keepGetMessage() {
+	tcp::socket socket(io_service);
+	boost::asio::connect(socket, endpoint_iterator);
+	while (1) {
+		array<char, 256> input_buffer;
+		size_t rsize = socket.read_some(boost::asio::buffer(input_buffer), error);// get message from server
+		Fix receive(string(input_buffer.data(), input_buffer.data() + rsize));
+		switch (receive.getTag(Type))
+		{
+		case '8':
+			switch (receive.getTag(Status)) {
+			case '0':// add new
+				book.addNewOrder(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
+				cout << "add new order successfully\n";
+				cout << "> ";
+				break;
+			case '1': // order partial fill
+				book.update(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
+				cout << "the order was partially filled" << endl;
+				cout << Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0');
+				cout << "> ";
+				break;
+			case '2':// order full fill
+				book.update(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
+				cout << "the order was filled" << endl;
+				cout << Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0');
+				cout << "> ";
+				break;
+			case '4':// order cancel
+				book.delOrder(receive.getID());
+				cout << "the order " + receive.getID() + " has been cancelled successfully\n";
+				cout << "> ";
+				break;
+			default:
+				break;
+			}
+			break;
+
+		case '9': // request rejected
+			cout << "the cancel request is rejected\n";
+			cout << "> ";
+			break;
+		default:
+			break;
+		}
 	}
 }
 
 int main(int argc, char* argv[])
 {
-	boost::asio::io_service io_service;
-	tcp::resolver resolver(io_service);
-	tcp::resolver::query query("192.168.0.106", "9876");
-	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 	tcp::socket socket(io_service);
 	boost::asio::connect(socket, endpoint_iterator);
-	boost::system::error_code error;
-	// get connected with server
+	// thread to read message from server
+	thread ReadMessage(keepGetMessage);
+	ReadMessage.detach();
 	while (1)
 		try {
 		menu();
 		string input;
 		cout << "> ";
-		getline(cin, input);
 		// get input
-		int n = checkInt(input, 0, 2);
-		if (n == 0) break;
+		getline(cin, input);
+		int n = checkInt(input, 0, 3);
 		switch (n)
 		{
-		case 1:
-		{
-			boost::asio::write(socket, boost::asio::buffer(sendMessage(add_new) + "\n"), error);// send message to server
+		case 0:
+			boost::asio::write(socket, boost::asio::buffer("quit"), error);// send quit message to server
+			goto exit;
 			break;
-		}
+		case 1:
+			boost::asio::write(socket, boost::asio::buffer(sendMessage(add_new)), error);// send message to server
+			break;
 		case 2:
 			cout << book;
-			continue;
+			break;
+		case 3:
+			boost::asio::write(socket, boost::asio::buffer(sendMessage(cancel)), error);// send message to server
 		default:
 			break;
 		}
-		array<char, 256> input_buffer;
-		size_t rsize = socket.read_some(boost::asio::buffer(input_buffer), error);// get message from server
-		Fix receive(string(input_buffer.data(), input_buffer.data() + rsize));
 	}
 	catch (exception& e) {
 		cerr << e.what() << "\n";
@@ -133,5 +173,6 @@ int main(int argc, char* argv[])
 	catch (...) {
 		cerr << "other errors" << "\n";
 	}
+exit:
 	return 0;
 }
