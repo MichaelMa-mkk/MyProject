@@ -24,12 +24,14 @@ OrderBook book;
 // get connected with server
 boost::asio::io_service io_service;
 tcp::resolver resolver(io_service);
-tcp::resolver::query query("192.168.0.106", "9876");
+tcp::resolver::query query("10.154.40.68", "9876");
 tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 boost::system::error_code error;
+
 string client_id;
 
 void menu() {// print operating menu
+	cout << endl;
 	cout << "0: quit\n1: add an order\n2: show all the orders in client\n3: cancel an order\n";
 }
 
@@ -86,12 +88,10 @@ string sendMessage(char type)// create a Fix message
 	}
 }
 
-void keepGetMessage() {
-	tcp::socket socket(io_service);
-	boost::asio::connect(socket, endpoint_iterator);
+void keepGetMessage(tcp::socket* socket) {
 	while (1) {
 		array<char, 256> input_buffer;
-		size_t rsize = socket.read_some(boost::asio::buffer(input_buffer), error);// get message from server
+		size_t rsize = socket->read_some(boost::asio::buffer(input_buffer), error);// get message from server
 		Fix receive(string(input_buffer.data(), input_buffer.data() + rsize));
 		switch (receive.getTag(Type))
 		{
@@ -100,24 +100,24 @@ void keepGetMessage() {
 			case '0':// add new
 				book.addNewOrder(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
 				cout << "add new order successfully\n";
-				cout << "> ";
+				cout << "\n> ";
 				break;
 			case '1': // order partial fill
 				book.update(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
 				cout << "the order was partially filled" << endl;
 				cout << Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0');
-				cout << "> ";
+				cout << "\n> ";
 				break;
 			case '2':// order full fill
 				book.update(Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0'));
 				cout << "the order was filled" << endl;
 				cout << Order(receive.getPrice(), receive.getTag(Side), receive.getQuantity(), receive.getID(), receive.getTag(Status) - '0');
-				cout << "> ";
+				cout << "\n> ";
 				break;
 			case '4':// order cancel
 				book.delOrder(receive.getID());
 				cout << "the order " + receive.getID() + " has been cancelled successfully\n";
-				cout << "> ";
+				cout << "\n> ";
 				break;
 			default:
 				break;
@@ -126,7 +126,7 @@ void keepGetMessage() {
 
 		case '9': // request rejected
 			cout << "the cancel request is rejected\n";
-			cout << "> ";
+			cout << "\n> ";
 			break;
 		default:
 			break;
@@ -139,13 +139,13 @@ int main(int argc, char* argv[])
 	tcp::socket socket(io_service);
 	boost::asio::connect(socket, endpoint_iterator);
 	// thread to read message from server
-	thread ReadMessage(keepGetMessage);
+	thread ReadMessage(keepGetMessage, &socket);
 	ReadMessage.detach();
 	while (1)
 		try {
 		menu();
 		string input;
-		cout << "> ";
+		cout << "\n> ";
 		// get input
 		getline(cin, input);
 		int n = checkInt(input, 0, 3);

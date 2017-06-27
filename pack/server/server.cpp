@@ -53,24 +53,30 @@ string sendMessage(char type, const Order& order)// create a Fix message
 	}
 }
 
-void work()// fill the order if possible
+void work(tcp::socket* socketClient)// fill the order if possible
 {
-	// get ready to get message
-	tcp::socket socket(io_service);
-	acc.accept(socket);
 	while (1) {
 		this_thread::sleep_for(chrono::seconds(1));// too fast is not proper :)
 		if (send_buffer.status != -1) {
 			cout << "send message\n" + sendMessage(report, send_buffer) << endl;
-			boost::asio::write(socket, boost::asio::buffer(sendMessage(report, send_buffer)), ignored);// send message to client
+			boost::asio::write(*socketClient, boost::asio::buffer(sendMessage(report, send_buffer)), ignored);// send message to client
 			send_buffer = Order();
 		}
 		pair<Order, Order> result = book.fill();
 		if (result.first.status == -1) continue;
 		cout << "send message\n" + sendMessage(report, result.second) << endl;
-		boost::asio::write(socket, boost::asio::buffer(sendMessage(report, result.second)), ignored);// send message to client
+		boost::asio::write(*socketClient, boost::asio::buffer(sendMessage(report, result.second)), ignored);// send message to client
 		cout << "send message\n" + sendMessage(report, result.first) << endl;
-		boost::asio::write(socket, boost::asio::buffer(sendMessage(report, result.first)), ignored);// send message to client
+		boost::asio::write(*socketClient, boost::asio::buffer(sendMessage(report, result.first)), ignored);// send message to client
+	}
+}
+
+void monitoring() {
+	tcp::socket socketMonitor(io_service);
+	acc.accept(socketMonitor);
+	while (1) {
+		this_thread::sleep_for(chrono::seconds(1));
+		boost::asio::write(socketMonitor, boost::asio::buffer(book.show()), ignored);// send message to client
 	}
 }
 
@@ -78,14 +84,17 @@ int main()
 {
 	while (1) {
 		// get ready to get message
-		tcp::socket socket(io_service);
-		acc.accept(socket);
+		tcp::socket socketClient(io_service);
+		acc.accept(socketClient);
 		// fill order thread
-		thread orderFilling(work);
+		thread orderFilling(work, &socketClient);
 		orderFilling.detach();
+		// monitor client thread
+		thread monitorClient(monitoring);
+		monitorClient.detach();
 		while (1) {
 			array<char, 256> input_buffer;
-			size_t input_size = socket.read_some(boost::asio::buffer(input_buffer), ignored);//get meesage from client
+			size_t input_size = socketClient.read_some(boost::asio::buffer(input_buffer), ignored);//get meesage from client
 			string client_message(input_buffer.data(), input_buffer.data() + input_size);// transfer the message to string
 			Fix now(client_message);
 			switch (now.getTag(Type))
@@ -100,14 +109,14 @@ int main()
 			default:
 				break;
 			}
-			cout << socket.remote_endpoint().address().to_string() + ": " << client_message << endl;
+			cout << socketClient.remote_endpoint().address().to_string() + ": " << client_message << endl;
 			if (client_message == "quit") break;
 			if (client_message == "") break;
 			cout << book;
 		}
 
-		socket.shutdown(tcp::socket::shutdown_both, ignored);
-		socket.close();
+		socketClient.shutdown(tcp::socket::shutdown_both, ignored);
+		socketClient.close();
 	}
 	return 0;
 }

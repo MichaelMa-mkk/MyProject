@@ -35,7 +35,8 @@ double Double(const string & s) {// transfer a string to a double
 	ss >> ans;
 	string temp;// save redundant words
 	ss >> temp;
-	if (s[0] < '0' || s[0] > '9') Error("Illegal integer format. Try again.");
-	if (temp.size()) Error("Illegal integer format. Try again.");
+	if (s[0] < '0' || s[0] > '9') Error("Illegal float format. Try again.");
+	if (temp.size()) Error("Illegal float format. Try again.");
+	if (ans - 0 <= 1e-3) Error("price must greater than 0.");
 	return ans;
 }

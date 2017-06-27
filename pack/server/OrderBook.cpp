@@ -1,6 +1,7 @@
 #include "OrderBook.h"
 #include <vector>
 #include <string>
+#include <sstream>
 #include <algorithm>
 
 
@@ -72,8 +73,8 @@ pair<Order, Order> OrderBook::fill()// this->first == buy, this->second == sell
 				sell_order[j].quantity -= match;
 				buy_order[i].quantity -= match;
 				// update status
-				sell_order[j].quantity ? sell_order[j].status = 2 : sell_order[j].status = 1;
-				buy_order[i].quantity ? buy_order[i].status = 2 : buy_order[i].status = 1;
+				sell_order[j].quantity ? sell_order[j].status = 1 : sell_order[j].status = 2;
+				buy_order[i].quantity ? buy_order[i].status = 1 : buy_order[i].status = 2;
 				// get return
 				ans = make_pair(buy_order[i], sell_order[j]);
 				// update order list
@@ -100,6 +101,39 @@ int OrderBook::getSellSize() const
 	return sell_order.size();
 }
 
+string OrderBook::toString() const
+{
+	stringstream ss;
+	for (auto x : buy_order) {
+		ss << x << endl;
+	}
+	for (auto x : sell_order) {
+		ss << x << endl;
+	}
+	return ss.str();
+}
+
+string OrderBook::show() const
+{
+	stringstream ss;
+	ss << "BUY ORDERS\t\t\tSELL ORDERS" << endl
+		<< "SHARES\tPRICE\t\tSHARES\tPRICE" << endl;
+	for (int i = 0; i < min(5, (int)buy_order.size()); i++) {
+		ss << buy_order[i].toString();
+		int x = sell_order.size() - 1 - i;
+		if (x >= 0) ss << "\t" << sell_order[x].toString();
+		ss << endl;
+	}
+	if ((int)buy_order.size() - min(5, (int)buy_order.size()) > 0) ss << "("
+		<< (int)buy_order.size() - min(5, (int)buy_order.size())
+		<< " more)\t";
+	if ((int)sell_order.size() - min(5, (int)buy_order.size()) > 0) ss << "("
+		<< (int)sell_order.size() - min(5, (int)buy_order.size())
+		<< " more)";
+	ss << endl;
+	return ss.str();
+}
+
 ostream & operator << (ostream & os, const Order & order) {
 	return os << "price: " << order.price << endl
 		<< "side: " << order.side << endl
@@ -110,11 +144,12 @@ ostream & operator << (ostream & os, const Order & order) {
 
 ostream & operator<< (ostream & os, const OrderBook & book)
 {
-	for (auto x : book.buy_order) {
-		os << x << endl;
-	}
-	for (auto x : book.sell_order) {
-		os << x << endl;
-	}
-	return os;
+	return os << book.toString();
+}
+
+string Order::toString() const
+{
+	stringstream ss;
+	ss << quantity << "\t" << price;
+	return ss.str();
 }

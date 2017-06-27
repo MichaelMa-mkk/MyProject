@@ -16,6 +16,7 @@ struct Order
 	bool operator < (const Order & x) const {
 		return price == x.price ? (quantity < x.quantity) : price < x.price;
 	}
+	string toString()const;
 };
 ostream & operator << (ostream & os, const Order & order);
 
@@ -26,14 +27,16 @@ public:
 	~OrderBook();
 	bool addNewOrder(Order now);
 	Order delOrder(string id);
-	void update(Order now);
-	pair<Order, Order> fill();
-	int getBuySize()const;
-	int getSellSize()const;
+	void update(Order now);// update an existed order
+	pair<Order, Order> fill();// fill order in the book
+	string toString()const;
+	string show()const;// show on the monitor
 	friend ostream& operator << (ostream& os, const OrderBook & book);
 
 private:
 	vector<Order> buy_order, sell_order;
+	int getBuySize()const;// get vector buy_order size
+	int getSellSize()const;// get vector sell_order size
 
 };
 
