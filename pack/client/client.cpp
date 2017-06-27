@@ -24,7 +24,7 @@ OrderBook book;
 // get connected with server
 boost::asio::io_service io_service;
 tcp::resolver resolver(io_service);
-tcp::resolver::query query("10.154.40.68", "9876");
+tcp::resolver::query query("108.179.146.78", "9876");
 tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 boost::system::error_code error;
 
@@ -119,6 +119,10 @@ void keepGetMessage(tcp::socket* socket) {
 				cout << "the order " + receive.getID() + " has been cancelled successfully\n";
 				cout << "\n> ";
 				break;
+			case '8':
+				cout << "the request has been rejected\n";
+				cout << "\n> ";
+				break;
 			default:
 				break;
 			}
@@ -132,6 +136,16 @@ void keepGetMessage(tcp::socket* socket) {
 			break;
 		}
 	}
+}
+
+bool session() {// check if time is in session
+	time_t t = time(NULL);
+	tm timeinfo;
+	localtime_s(&timeinfo, &t);
+	if (timeinfo.tm_wday >= 1 && timeinfo.tm_wday <= 5)// Monday to Friday
+		if ((timeinfo.tm_hour >= 9 && timeinfo.tm_hour <= 11) || (timeinfo.tm_hour >= 13 && timeinfo.tm_hour <= 16))// 9:00 to 11:00 or 13:00 to 16:00
+			return true;
+	return false;
 }
 
 int main(int argc, char* argv[])
@@ -156,13 +170,18 @@ int main(int argc, char* argv[])
 			goto exit;
 			break;
 		case 1:
-			boost::asio::write(socket, boost::asio::buffer(sendMessage(add_new)), error);// send message to server
+			if (session())
+				boost::asio::write(socket, boost::asio::buffer(sendMessage(add_new)), error);// send message to server
+			else cout << "local time is not in session." << endl;
 			break;
 		case 2:
 			cout << book;
 			break;
 		case 3:
-			boost::asio::write(socket, boost::asio::buffer(sendMessage(cancel)), error);// send message to server
+			if (session())
+				boost::asio::write(socket, boost::asio::buffer(sendMessage(cancel)), error);// send message to server
+			else cout << "local time is not in session." << endl;
+			break;
 		default:
 			break;
 		}

@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <chrono>
+#include <ctime>
 
 #include "Fix.h"
 #include "OrderBook.h"
@@ -15,14 +16,32 @@ using namespace Fix4;
 
 const char report = '8'; // represent Execution Report
 const int notFound = -2;// represent can't find cancelling order
+const int reject = 8;// represent order status----rejected 
 
 OrderBook book;
 Order send_buffer;
+
+bool shut = 0;// whether the socketClient is shut down
 
 // open server on LAN
 boost::asio::io_service io_service;
 tcp::acceptor acc(io_service, tcp::endpoint(tcp::v6(), 9876));
 boost::system::error_code ignored;
+
+bool session() {// check if time is in session
+	time_t t = time(NULL);
+	tm ptm;
+	gmtime_s(&ptm, &t);
+	// tansfer to time in Shanghai, China
+	int hour = ptm.tm_hour + 8;
+	int wday = (hour / 24 + ptm.tm_wday) % 7;
+	hour %= 24;
+	if (wday >= 1 && wday <= 5) {// Monday to Friday
+		if ((hour >= 9 && hour <= 11) || (hour >= 13 && hour <= 16))// 9:00 to 11:00 or 13:00 to 16:00
+			return true;
+	}
+	return false;
+}
 
 string sendMessage(char type, const Order& order)// create a Fix message 
 {
@@ -31,6 +50,7 @@ string sendMessage(char type, const Order& order)// create a Fix message
 	case report:
 	{
 		if (order.status == notFound) return string("35=9;39=8;");
+		if (order.status == reject) return string("35=8;39=8;");
 		Fix send;
 		//add type
 		send.addTag(Type, report);
@@ -57,6 +77,7 @@ void work(tcp::socket* socketClient)// fill the order if possible
 {
 	while (1) {
 		this_thread::sleep_for(chrono::seconds(1));// too fast is not proper :)
+		if (shut) break;
 		if (send_buffer.status != -1) {
 			cout << "send message\n" + sendMessage(report, send_buffer) << endl;
 			boost::asio::write(*socketClient, boost::asio::buffer(sendMessage(report, send_buffer)), ignored);// send message to client
@@ -75,9 +96,13 @@ void monitoring() {
 	tcp::socket socketMonitor(io_service);
 	acc.accept(socketMonitor);
 	while (1) {
+		if (shut) break;
 		this_thread::sleep_for(chrono::seconds(1));
 		boost::asio::write(socketMonitor, boost::asio::buffer(book.show()), ignored);// send message to client
 	}
+
+	socketMonitor.shutdown(tcp::socket::shutdown_both, ignored);
+	socketMonitor.close();
 }
 
 int main()
@@ -86,6 +111,7 @@ int main()
 		// get ready to get message
 		tcp::socket socketClient(io_service);
 		acc.accept(socketClient);
+		shut = false;
 		// fill order thread
 		thread orderFilling(work, &socketClient);
 		orderFilling.detach();
@@ -100,18 +126,32 @@ int main()
 			switch (now.getTag(Type))
 			{
 			case 'D':
-				book.addNewOrder(Order(now.getPrice(), now.getTag(Side), now.getQuantity(), now.getID()));
-				send_buffer = Order(now.getPrice(), now.getTag(Side), now.getQuantity(), now.getID());
+				if (session()) {
+					book.addNewOrder(Order(now.getPrice(), now.getTag(Side), now.getQuantity(), now.getID()));
+					send_buffer = Order(now.getPrice(), now.getTag(Side), now.getQuantity(), now.getID());
+				}
+				else {
+					send_buffer = Order();
+					send_buffer.status = 8;
+				}
 				break;
 			case 'F':
-				send_buffer = book.delOrder(now.getID());
+				if (session()) {
+					send_buffer = book.delOrder(now.getID());
+				}
+				else {
+					send_buffer = Order();
+					send_buffer.status = 8;
+				}
 				break;
 			default:
 				break;
 			}
 			cout << socketClient.remote_endpoint().address().to_string() + ": " << client_message << endl;
-			if (client_message == "quit") break;
-			if (client_message == "") break;
+			if (client_message == "quit" || client_message == "") {
+				shut = true;
+				break;
+			}
 			cout << book;
 		}
 

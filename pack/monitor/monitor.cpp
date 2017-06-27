@@ -11,7 +11,7 @@ int main() {
 	// get ready to connect server
 	boost::asio::io_service io_service;
 	tcp::resolver resolver(io_service);
-	tcp::resolver::query query("10.154.40.68", "9876");
+	tcp::resolver::query query("108.179.146.78", "9876");
 	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 	boost::system::error_code error;
 	tcp::socket socket(io_service);
