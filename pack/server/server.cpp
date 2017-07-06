@@ -29,6 +29,7 @@ tcp::acceptor acc(io_service, tcp::endpoint(tcp::v6(), 9876));
 boost::system::error_code ignored;
 
 bool session() {// check if time is in session
+	return 1;
 	time_t t = time(NULL);
 	tm ptm;
 	gmtime_s(&ptm, &t);

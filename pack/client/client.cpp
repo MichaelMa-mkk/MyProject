@@ -24,7 +24,8 @@ OrderBook book;
 // get connected with server
 boost::asio::io_service io_service;
 tcp::resolver resolver(io_service);
-tcp::resolver::query query("108.179.146.78", "9876");
+/***************************************************change IP here*******************************************************************/
+tcp::resolver::query query("108.179.131.29", "9876");
 tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 boost::system::error_code error;
 
@@ -139,6 +140,7 @@ void keepGetMessage(tcp::socket* socket) {
 }
 
 bool session() {// check if time is in session
+	return 1;
 	time_t t = time(NULL);
 	tm timeinfo;
 	localtime_s(&timeinfo, &t);

@@ -116,14 +116,22 @@ string OrderBook::toString() const
 string OrderBook::show() const
 {
 	stringstream ss;
-	ss << "BUY ORDERS\t\t\tSELL ORDERS" << endl
+	ss << "BUY ORDERS\t\tSELL ORDERS" << endl
 		<< "SHARES\tPRICE\t\tSHARES\tPRICE" << endl;
-	for (int i = 0; i < min(5, (int)buy_order.size()); i++) {
-		ss << buy_order[i].toString();
-		int x = sell_order.size() - 1 - i;
-		if (x >= 0) ss << "\t" << sell_order[x].toString();
-		ss << endl;
-	}
+	if (sell_order.size() >= buy_order.size())
+		for (int i = 0; i < min(5, (int)sell_order.size()); i++) {
+			int x = buy_order.size() - 1 - i;
+			if (x >= 0) ss << buy_order[x].toString();
+			ss << "\t\t" << sell_order[i].toString();
+			ss << endl;
+		}
+	else
+		for (int i = 0; i < min(5, (int)buy_order.size()); i++) {
+			int x = buy_order.size() - 1 - i;
+			if (x >= 0) ss << buy_order[x].toString();
+			if (i < sell_order.size()) ss << "\t\t" << sell_order[i].toString();
+			ss << endl;
+		}
 	if ((int)buy_order.size() - min(5, (int)buy_order.size()) > 0) ss << "("
 		<< (int)buy_order.size() - min(5, (int)buy_order.size())
 		<< " more)\t";
