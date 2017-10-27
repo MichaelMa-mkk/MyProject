@@ -1,5 +1,8 @@
-[TOC]
-# Git Feature Branch Workflow
+[Git Feature Branch Workflow](#1)  
+&emsp;&emsp;[How it works](#1.1)  
+&emsp;&emsp;&emsp;&emsp;[Start with the master branch](#1.1.1)
+
+# <div id="1">Git Feature Branch Workflow</div>
 
 The core idea behind the Feature Branch Workflow is that all feature development should take place in a dedicated branch instead of the master branch. This encapsulation makes it easy for multiple developers to work on a particular feature without disturbing the main codebase. It also means the master branch will never contain broken code, which is a huge advantage for continuous integration environments.
 
@@ -7,13 +10,13 @@ Encapsulating feature development also makes it possible to leverage pull reques
 
 The Git Feature Branch Workflow is a composable workflow that can be leveraged by other high-level Git workflows. We discussed other Git workflows on the Git workflow overview page. Git Feature Branch Workflow is branching model focused, meaning that it is a guiding framework for managing and creating branches. Other workflows are more repo focused. The Git Feature Branch Workflow can be incorporated into other workflows. The Gitflow, and Git Forking Workflows traditionally use a Git Feature Branch Workflow in regards to their branching models.
 
-## How it works
+## <div id="1.1">How it works
 
 The Feature Branch Workflow assumes a central repository, and master represents the official project history. Instead of committing directly on their local master branch, developers create a new branch every time they start work on a new feature. Feature branches should have descriptive names, like animated-menu-items or issue-#1061. The idea is to give a clear, highly-focused purpose to each branch. Git makes no technical distinction between the master branch and feature branches, so developers can edit, stage, and commit changes to a feature branch.
  
 In addition, feature branches can (and should) be pushed to the central repository. This makes it possible to share a feature with other developers without touching any official code. Since master is the only “special” branch, storing several feature branches on the central repository doesn’t pose any problems. Of course, this is also a convenient way to back up everybody’s local commits. The following is a walk-through of the life-cycle of a feature branch.
 
-### Start with the master branch
+### <div id="1.1.1">Start with the master branch
 
 All feature branches are created off the latest code state of a project. This guide assumes this is maintained and updated in the master branch.
 
