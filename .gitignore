@@ -6,3 +6,6 @@ Debug
 *.vs
 Release
 *.opendb
+.gradle
+.idea
+build
